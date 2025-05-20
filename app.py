@@ -7,21 +7,18 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Load your trained model once at startup
 model = joblib.load('sonar_model.pkl')
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        data = request.json['data']  # expects list of 60 floats
+        data = request.json.get('data')
+        if not data:
+            return jsonify({'error': 'No input data provided'}), 400
         arr = np.array(data).reshape(1, -1)
         pred = model.predict(arr)[0]
 
-        if pred == 'R':
-            message = "Rock Ahead No Tension"
-        else:
-            message = "Mines Ahead Danger!!!"
-
+        message = "Rock Ahead No Tension" if pred == 'R' else "Mines Ahead Danger!!!"
         return jsonify({'prediction': message})
 
     except Exception as e:
@@ -32,6 +29,5 @@ def serve_index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    # Bind to 0.0.0.0 and use the PORT environment variable for deployment platforms like Render
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
